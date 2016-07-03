@@ -55,30 +55,30 @@ function Clean-OutputFolder($folder) {
 # From http://www.dougfinke.com/blog/index.php/2010/12/01/note-to-self-how-to-programmatically-get-the-msbuild-path-in-powershell/
 
 Function Get-MSBuild {
-    $lib = [System.Runtime.InteropServices.RuntimeEnvironment]
-    $rtd = $lib::GetRuntimeDirectory()
-    Join-Path $rtd msbuild.exe
+    #$lib = [System.Runtime.InteropServices.RuntimeEnvironment]
+    #$rtd = $lib::GetRuntimeDirectory()
+    #Join-Path $rtd msbuild.exe
+    "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe"
 }
 
 #################
 
-$root = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
-$projectPath = Join-Path $root "..\LibGit2Sharp"
-$slnPath = Join-Path $projectPath "..\LibGit2Sharp.sln"
+$nugetPackagePath = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
+$root = Join-Path $nugetPackagePath ".."
+$projectPath = Join-Path $root "LibGit2Sharp"
+$portableProjectPath = Join-Path $root "LibGit2Sharp.Portable"
+$slnPath = Join-Path $root "LibGit2Sharp.sln"
 
-Remove-Item (Join-Path $projectPath "*.nupkg")
+Remove-Item (Join-Path $nugetPackagePath "*.nupkg")
 
 Clean-OutputFolder (Join-Path $projectPath "bin\")
 Clean-OutputFolder (Join-Path $projectPath "obj\")
-
-# The nuspec file needs to be next to the csproj, so copy it there during the pack operation
-Copy-Item (Join-Path $root "LibGit2Sharp.nuspec") $projectPath
-
-Push-Location $projectPath
+Clean-OutputFolder (Join-Path $portableProjectPath "bin\")
+Clean-OutputFolder (Join-Path $portableProjectPath "obj\")
 
 try {
-  Set-Content -Encoding ASCII $(Join-Path $projectPath "libgit2sharp_hash.txt") $commitSha
-  Run-Command { & "$(Join-Path $projectPath "..\Lib\NuGet\Nuget.exe")" Restore "$slnPath" }
+  Set-Content -Encoding ASCII $(Join-Path $root "libgit2sharp_hash.txt") $commitSha
+  #Run-Command { & "$(Join-Path $root "Lib\NuGet\Nuget.exe")" Restore "$slnPath" }
   Run-Command { & (Get-MSBuild) "$slnPath" "/verbosity:minimal" "/p:Configuration=Release" }
 
   If ($postBuild) {
@@ -86,10 +86,9 @@ try {
     Run-Command { & ($postBuild) }
   }
 
-  Run-Command { & "$(Join-Path $projectPath "..\Lib\NuGet\Nuget.exe")" Pack -Prop Configuration=Release }
+  Run-Command { & "$(Join-Path $root "Lib\NuGet\Nuget.exe")" Pack -Prop Configuration=Release LibGit2Sharp.nuspec }
 }
 finally {
   Pop-Location
-  Remove-Item (Join-Path $projectPath "LibGit2Sharp.nuspec")
-  Set-Content -Encoding ASCII $(Join-Path $projectPath "libgit2sharp_hash.txt") "unknown"
+  Set-Content -Encoding ASCII $(Join-Path $root "libgit2sharp_hash.txt") "unknown"
 }
