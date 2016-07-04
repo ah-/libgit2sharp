@@ -1,9 +1,11 @@
 version: '{build}'
 
+os: Visual Studio 2015
+
 branches:
   only:
   - master
-  - vNext
+  - portable
 
 skip_tags: true
 
@@ -76,8 +78,8 @@ install:
 
     If ($Env:SHOULD_RUN_COVERALLS -eq $True)
     {
-      nuget install OpenCover -Version 4.6.166 -ExcludeVersion -OutputDirectory .\packages
-      nuget install coveralls.net -Version 0.6.0 -ExcludeVersion -OutputDirectory .\packages
+      lib\nuget\nuget.exe install OpenCover -Version 4.6.166 -ExcludeVersion -OutputDirectory .\packages
+      lib\nuget\nuget.exe install coveralls.net -Version 0.6.0 -ExcludeVersion -OutputDirectory .\packages
     }
 
     If ($Env:SHOULD_RUN_COVERITY_ANALYSIS -eq $True)
@@ -87,7 +89,7 @@ install:
 
 assembly_info:
   patch: true
-  file: LibGit2Sharp\Properties\AssemblyInfo.cs
+  file: LibGit2Sharp.Shared\Properties\AssemblyInfo.cs
   assembly_version: '$(VERSION)'
   assembly_file_version: '$(VERSION)'
   assembly_informational_version: '$(ASSEMBLY_INFORMATIONAL_VERSION)'
@@ -96,11 +98,12 @@ cache:
   - packages
 
 before_build:
-- ps: nuget restore "$Env:APPVEYOR_BUILD_FOLDER\LibGit2Sharp.sln"
+- ps: |
+   & "$Env:APPVEYOR_BUILD_FOLDER\lib\nuget\nuget.exe" restore "$Env:APPVEYOR_BUILD_FOLDER\LibGit2Sharp.sln"
 
 build_script:
 - ps: |
-    & cov-build.exe --dir cov-int msbuild "$Env:APPVEYOR_BUILD_FOLDER\LibGit2Sharp.sln" `
+    & msbuild "$Env:APPVEYOR_BUILD_FOLDER\LibGit2Sharp.sln" `
       /verbosity:normal `
       /p:Configuration=Release `
       /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" `
