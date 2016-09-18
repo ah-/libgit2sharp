@@ -31,8 +31,3 @@ branches:
  only:
    - master
    - portable
-
-# Notify of build changes
-notifications:
- email:
-  - emeric.fermas@gmail.com
